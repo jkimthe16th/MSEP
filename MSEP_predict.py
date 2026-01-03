@@ -1,6 +1,4 @@
-# file: MSEP_predict_fixed_single_value.py
-#!/usr/bin/env python
-# coding: utf-8
+
 """
 Machine Learning SCF Energy (MSEP) Predictions – fixed experimental SCF parsing
 

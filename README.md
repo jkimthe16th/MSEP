@@ -1,4 +1,4 @@
-# MSEP: Physics-Guided-Machine-Learning-for-Molecular-SCF-Energy-Prediction
+# MSEP: Machine Learning SCF Energy Prediction
 A physics-informed machine learning pipeline for predicting molecular Self-Consistent Field (SCF) energies at the B3LYP/6-31G(2df,p) level of theory. Predictions complete in under 1 second, enabling high-throughput screening of molecular libraries.
 
 ### Key Features
@@ -235,7 +235,7 @@ If you use this code, please cite:
 
 ```
 @software{msep2024,
-  title={MSEP: Physics-Guided Machine Learning for Molecular SCF Energy Prediction},
+  title={MSEP: Machine Learning SCF Energy Prediction},
   year={2025},
   url={https://github.com/jkimthe16th/MSEP}
 }

@@ -17,6 +17,15 @@ The model incorporates four fundamental physical principles:
 3. **Multi-component ZPVE model**: Zero-point vibrational energy from bond frequencies
 4. **Born-like solvation corrections**: Solvent effects using dielectric continuum model
 
+## Files
+
+| File | Description | Who needs it |
+|------|-------------|--------------|
+| `msep_core.py` | Core library with all functions | Everyone |
+| `msep_model.pkl` | Pre-trained model weights | Everyone |
+| `msep_predict.py` | User-facing prediction script | End users |
+| `msep_train.py` | Training script (generates model.pkl) | Developers only |
+
 ## Performance
 
 | Metric | Result (kcal/mol) |
@@ -36,51 +45,55 @@ The model incorporates four fundamental physical principles:
 ### Requirements
 
 ```bash
-pip install numpy pandas scikit-learn rdkit-pypi requests matplotlib
+# Install dependencies
+pip install numpy pandas scikit-learn requests
+
+# Install RDKit (required)
+conda install -c conda-forge rdkit
+# OR
+pip install rdkit
 ```
 
-### Dependencies
+### Setup
 
-- Python 3.8+
-- NumPy
-- Pandas
-- scikit-learn
-- RDKit
-- Matplotlib (for report generation)
-- requests (for QM9 dataset download)
+1. Download these files to your working directory:
+   - `msep_core.py`
+   - `msep_model.pkl`
+   - `msep_predict.py`
+
 
 ## Usage
 
-### Training
-
-Run the training script to build the model from the QM9 dataset:
+### Command Line
 
 ```bash
-python MSEP_train.py
+# Basic usage
+python msep_predict.py compounds.csv
+
+# Specify output file
+python msep_predict.py compounds.csv --output results.csv
+
+# Specify model path
+python msep_predict.py compounds.csv --model /path/to/msep_model.pkl
 ```
 
-The training script will:
-1. Download the QM9 dataset (or use a local `qm9.csv` file)
-2. Extract 316 physics-informed features per molecule
-3. Train a 4-stage gradient boosting ensemble
-4. Store model components in memory for predictions
+### Python/Jupyter
 
-**Training output:**
-- Model trained on 50,000 molecules
-- Automatic feature extraction and scaling
-- ZPVE model fitting with multi-component regression
+```python
+from msep_core import load_model, predict_molecule, predict_batch
 
-### Prediction
+# Load the model (do this once)
+load_model('msep_model.pkl')
 
-After training, run the prediction script:
+# Predict a single molecule
+result = predict_molecule('CCO', solvent='water', verbose=True)
+print(f"SCF Energy: {result['scf_solvated']:.6f} Ha")
+print(f"Uncertainty: ±{result['uncertainty']:.6f} Ha")
 
-```bash
-python MSEP_predict.py
+# Predict multiple molecules
+smiles_list = ['C', 'CC', 'CCC', 'c1ccccc1']
+results = predict_batch(smiles_list, solvent='vacuum')
 ```
-
-The prediction script reads `Input_compounds.csv` and outputs:
-- `predictions_output.csv`: Detailed predictions
-- `validation_report.pdf`: Visual analysis report
 
 ## Input File Format
 
@@ -118,63 +131,6 @@ CN(C)CCc1c[nH]c2ccccc12,DMT,,water
 - `benzene`
 - `toluene`
 
-## Output Format
-
-The output CSV (`predictions_output.csv`) contains:
-
-| Column | Description |
-|--------|-------------|
-| `Compound` | Compound name |
-| `SMILES` | Canonical SMILES |
-| `Formula` | Molecular formula |
-| `N_Heavy` | Number of heavy atoms |
-| `Pred_SCF_Ha` | Predicted SCF energy (Hartree) |
-| `Pred_SCF_kcal` | Predicted SCF energy (kcal/mol) |
-| `Uncertainty_Ha` | Prediction uncertainty (Hartree) |
-| `Pred_ZPVE_Ha` | Predicted ZPVE (Hartree) |
-| `Solvent` | Solvent used |
-| `Extrapolated` | Whether molecule exceeds training domain |
-| `SUCCESS` | Whether prediction is within experimental range |
-| `Delta_from_Mean_kcal` | Deviation from experimental mean |
-
-## Programmatic Usage
-
-```python
-# After running MSEP_train.py in the same session:
-
-# Single molecule prediction
-result = predict_molecule(
-    smiles="CN(C)CCc1c[nH]c2ccccc12",  # DMT
-    solvent="water",
-    verbose=True,
-    return_breakdown=True
-)
-
-print(f"SCF Energy: {result['scf_solvated']:.6f} Ha")
-print(f"ZPVE: {result['zpve']:.6f} Ha")
-print(f"Uncertainty: ±{result['uncertainty']:.6f} Ha")
-
-# Batch prediction
-smiles_list = ["CCO", "c1ccccc1", "CC(=O)O"]
-results = predict_batch(smiles_list, solvent="water")
-```
-
-### Return Dictionary Keys
-
-```python
-{
-    'u0': float,              # Internal energy at 0K (Ha)
-    'zpve': float,            # Zero-point vibrational energy (Ha)
-    'e_elec': float,          # Electronic energy (Ha)
-    'scf_gas': float,         # Gas-phase SCF energy (Ha)
-    'solvation': float,       # Solvation correction (Ha)
-    'scf_solvated': float,    # Final SCF with solvation (Ha)
-    'uncertainty': float,     # Estimated uncertainty (Ha)
-    'n_heavy': int,           # Heavy atom count
-    'extrapolated': bool,     # True if N_heavy > 9
-    'breakdown': dict,        # Detailed energy components (if requested)
-}
-```
 
 ## Supported Elements
 
@@ -182,45 +138,33 @@ The model supports molecules containing: **H, C, N, O, F**
 
 Molecules with other elements will return `None` and be marked as failed.
 
-## Model Architecture
+## For Developers
 
-### Feature Engineering (316 features)
+### Retraining the Model
 
-1. **Hückel Theory Features**: π-system size, delocalization energy, HOMO-LUMO gap
-2. **Extended Hückel Features**: VOIP contributions, Slater exponents
-3. **ZPVE Features**: Bond stretching frequencies, vibrational modes
-4. **Solvation Features**: SASA, TPSA, H-bond donors/acceptors, polarizability
-5. **Ring Features**: Ring count, strain energy, aromaticity
-6. **Functional Groups**: Ketones, amides, amines, alcohols, etc.
-7. **Morgan Fingerprints**: 256-bit structural fingerprints
+If you need to retrain the model:
 
-### Training Pipeline
-
-```
-Stage 1: Huber Regression (robust baseline)
-    ↓
-Stage 2: Ridge + Polynomial Features (interactions)
-    ↓
-Stage 3: Gradient Boosting (residual learning)
-    ↓
-Stage 4: Refinement GB (fine-tuning)
-    ↓
-Post-hoc Corrections: Size, π-system, functional group
+```bash
+python msep_train.py
 ```
 
-## Energy Calculation
+This will:
+1. Download the QM9 dataset
+2. Extract features for 50,000 molecules
+3. Train the ML models
+4. Save to `msep_model.pkl`
 
-The final SCF energy is computed as:
+Training takes approximately 10-15 minutes.
 
-```
-SCF = E_baseline + E_formation - ZPVE + ΔG_solvation
+### Architecture
 
-where:
-  E_baseline = Σ(atomic reference energies)
-  E_formation = ML-predicted formation energy
-  ZPVE = a×N_atoms + b×N_H + c×N_atoms² + d×N_bonds + residual_ML
-  ΔG_solvation = G_cavity + G_electrostatic + G_dispersion + G_hbond
-```
+The model uses a stacked ensemble:
+1. **Huber regression** - robust baseline
+2. **Ridge regression** with polynomial features
+3. **Gradient boosting** (HistGradientBoostingRegressor) - main model
+4. **Refinement GB** - captures residuals
+5. **Size/FG corrections** - empirical corrections
+
 
 ## Limitations
 
@@ -228,6 +172,7 @@ where:
 - **Elements**: Only H, C, N, O, F supported
 - **Conformers**: Does not predict conformational energy differences
 - **Level of theory**: Trained on B3LYP/6-31G(2df,p); other methods may differ
+- **Error by atom type**: Heteroatom-rich molecules tend to have higher prediction errors.
 
 ## Citation
 

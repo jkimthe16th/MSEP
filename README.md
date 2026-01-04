@@ -29,16 +29,16 @@ The model incorporates four fundamental physical principles:
 ## Performance
 
 | Metric | Result (kcal/mol) |
-|--------|------------------|
-| MAE (overall) | 2.8 |
-| MAE (N ≤ 7) | 2.2 |
-| MAE (N = 9) | 4.2 |
-| RMSE | 3.5 |
-| Bias | 0.3 |
-| P95 Error | 7.2 |
-| ZPVE MAE | 0.06 |
+|--------|-------------------|
+| MAE (overall) | 3.42 |
+| MAE (N ≤ 7) | 2.10 |
+| MAE (N = 9) | 3.57 |
+| RMSE | 5.34 |
+| Bias | -0.005 |
+| P95 Error | 9.17 |
+| ZPVE MAE | 2.19 |
 
-*Tested on QM9 dataset (133,885 molecules with ≤9 heavy atoms)*
+*Tested on QM9 dataset (10,000 held-out molecules with ≤9 heavy atoms)*
 
 ## Installation
 

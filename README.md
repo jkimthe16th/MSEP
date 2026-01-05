@@ -157,7 +157,7 @@ python msep_predict.py compounds.csv --output results.csv
 python msep_predict.py compounds.csv --model /path/to/msep_model.pkl
 ```
 
-### Python/Jupyter (Reccomended)
+### Python/Jupyter (Recomended)
 
 ```python
 # Make sure to have `msep_core.py` , `msep_model.pkl` , `msep_predict.py`, and 'Input_compounds.csv' in working directory and all other requirements are installed. 
@@ -181,7 +181,7 @@ Create a CSV file named `Input_compounds.csv` with the following columns:
 
 | Compound | smiles | solvent | scf |
 |--------|----------|-------------|-------------|
-| `Bufotenin` | `CN(C)CCc1c[nH]c2ccc(O)cc12` | `water` | (if available) |
+| `Bufotenin` | `CN(C)CCc1c[nH]c2ccc(O)cc12` | `water` | (In Ha, if available) |
 
 Multiple inputs can exist for the same compound if the user has different SCF energies at different conformers. 
 Simply continue to fill out the file, filling all applicable sections (even if repeated). 
